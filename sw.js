@@ -1,43 +1,46 @@
-const CACHE_NAME = "attendance-pro-v15-pwa";
-const ASSETS = [
-    "./",
-    "./index.html",
-    "./style.css",
-    "./app.js",
-    "./manifest.json",
-    "./icon.png",
-    "https://cdn.jsdelivr.net/npm/chart.js"
+const CACHE_NAME = "attendance-pro-v14-fix";
+const ASSETS_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icon.png",
+  "https://cdn.jsdelivr.net/npm/chart.js",
+  "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js",
+  "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"
 ];
 
-// Install & Cache
 self.addEventListener("install", (e) => {
-    self.skipWaiting();
-    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  self.skipWaiting(); 
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
 });
 
-// Activate & Clean Old Caches
 self.addEventListener("activate", (e) => {
-    e.waitUntil(
-        caches.keys().then(keys => Promise.all(
-            keys.map(key => key !== CACHE_NAME ? caches.delete(key) : Promise.resolve())
-        ))
-    );
-    return self.clients.claim();
+  e.waitUntil(caches.keys().then((keyList) => Promise.all(keyList.map((key) => {
+    if (key !== CACHE_NAME) return caches.delete(key);
+  }))));
+  return self.clients.claim();
 });
 
-// Fetch Strategy: Stale-While-Revalidate
-// This loads the page instantly from cache, then updates it in the background.
 self.addEventListener("fetch", (e) => {
-    // Skip Firebase/Google APIs
-    if (e.request.url.includes("firebase") || e.request.url.includes("googleapis")) return;
+  // CRITICAL FIX: Ignore Firebase requests so they don't fail offline
+  if (e.request.url.includes("firebase") || 
+      e.request.url.includes("googleapis") || 
+      e.request.url.includes("firestore")) {
+      return; 
+  }
 
-    e.respondWith(
-        caches.match(e.request).then(cachedRes => {
-            const fetchPromise = fetch(e.request).then(networkRes => {
-                caches.open(CACHE_NAME).then(cache => cache.put(e.request, networkRes.clone()));
-                return networkRes;
-            });
-            return cachedRes || fetchPromise;
-        })
-    );
+  e.respondWith(
+    fetch(e.request)
+      .then((res) => {
+        // Cache successful network requests
+        const resClone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+        return res;
+      })
+      .catch(() => {
+        // Fallback to cache if offline
+        return caches.match(e.request);
+      })
+  );
 });

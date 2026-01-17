@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Attendance Pro</title>
+    <meta name="description" content="Professional Attendance Tracker for Students">
+    <meta name="theme-color" content="#0f172a">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
+
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+    <div id="app-splash">
+        <div class="splash-content">
+            <img src="icon.png" alt="Logo" class="splash-logo">
+            <div class="splash-title">Attendance Pro</div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <header class="app-header">
+        <h1 class="app-title">Dashboard</h1>
+        <button class="icon-btn" id="headerSettingsBtn" aria-label="Settings">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+    </header>
+
+    <div id="alert-container"></div>
+
+    <main class="main-container">
+        
+        <section id="tab-home" class="tab-content active">
+            <div class="date-header">
+                <h2 id="current-date">Loading...</h2>
+                <div id="day-status-msg"></div>
+            </div>
+
+            <div id="lectures-list" class="fade-in"></div>
+
+            <div class="card dashed-border">
+                <div class="card-header">
+                    <h3>Extra Lecture</h3>
+                </div>
+                <div class="input-group">
+                    <select id="extraSubject" class="styled-select"></select>
+                </div>
+                <div class="action-grid">
+                    <button class="btn btn-present" data-action="markExtra" data-status="Present">Present</button>
+                    <button class="btn btn-absent" data-action="markExtra" data-status="Absent">Absent</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-stats" class="tab-content">
+            <div class="card" id="overall-stats-card">
+                </div>
+
+            <div class="card">
+                <div class="card-header"><h3>Subject Breakdown</h3></div>
+                <div id="subject-summary-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3>Analytics</h3></div>
+                <div class="chart-container">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-tools" class="tab-content">
+            <div class="card profile-card">
+                <div class="card-header"><h3>Cloud Sync</h3></div>
+                <div id="auth-ui"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3>History Manager</h3></div>
+                <div class="input-group">
+                    <label>Edit Past Date</label>
+                    <input type="date" id="pastDateInput" class="styled-input">
+                </div>
+                <div id="past-editor-container"></div>
+            </div>
+
+            <div class="card">
+                <button class="btn btn-outline" onclick="window.app.exportData()">Export Data (JSON)</button>
+                <button class="btn btn-danger mt-2" onclick="window.app.ui.openModal('reset')">Factory Reset</button>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="home">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Today</span>
+        </button>
+        <button class="nav-item" data-tab="stats">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Stats</span>
+        </button>
+        <button class="nav-item" data-tab="tools">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Tools</span>
+        </button>
+    </nav>
+
+    <div id="toast-container"></div>
+
+</body>
+</html>

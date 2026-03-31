@@ -1,10 +1,10 @@
 {
-  "name": "Attendance Tracker",
+  "name": "Attendance Pro",
   "short_name": "Attendance",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
   "orientation": "portrait",
   "icons": [
     {
@@ -19,5 +19,12 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "id": "NIR2006",
+  "lang": "en",
+  "categories": [
+    "education",
+    "productivity",
+    "social"
   ]
 }

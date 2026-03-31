@@ -6,6 +6,11 @@ let obWeekends = JSON.parse(localStorage.getItem("weekend_days") || '["Sunday"]'
 let obTimetable = {}; // built during onboarding step 3
 let obTarget = 75;
 
+// Initialize Supabase
+const supabaseUrl = 'https://gahmbbudkhlyliuwaqcy.supabase.co'; 
+const supabaseKey = 'sb_publishable_g3nHitWdObU8OMa8Fc9LjQ_VquLQE0k';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 function isFirstRun() {
     return !localStorage.getItem("onboarding_done");
 }
@@ -125,10 +130,11 @@ function obNext(step) {
     document.getElementById('onboardingWizard').scrollTop = 0;
 }
 
-function finishOnboarding() {
+function finishOnboarding(importedData = null) {
+    // Save Step 1 Profile Data
     const nameVal = document.getElementById('obStudentName').value.trim();
     if (nameVal) localStorage.setItem("student_name", nameVal);
-    // Save all onboarding data
+    
     localStorage.setItem("target_percent", obTarget);
     MIN_ATTENDANCE = obTarget;
     localStorage.setItem("weekend_days", JSON.stringify(obWeekends));
@@ -139,19 +145,25 @@ function finishOnboarding() {
     if (startVal) localStorage.setItem("sem_start_date", startVal);
     if (endVal) localStorage.setItem("sem_end_date", endVal);
 
-    // Build clean timetable from ob data (only valid slots)
-    const cleanTT = {};
-    Object.keys(obTimetable).forEach(day => {
-        const slots = obTimetable[day].filter(s => s[0] && s[1]);
-        if (slots.length > 0) cleanTT[day] = slots;
-    });
-    timetable = cleanTT;
+    // If a timetable was imported via code, use it. Otherwise, use the manually built one.
+    if (importedData) {
+        timetable = importedData;
+    } else {
+        const cleanTT = {};
+        Object.keys(obTimetable).forEach(day => {
+            const slots = obTimetable[day].filter(s => s[0] && s[1]);
+            if (slots.length > 0) cleanTT[day] = slots;
+        });
+        timetable = cleanTT;
+    }
+    
+    // Save timetable and finish
     localStorage.setItem("custom_timetable", JSON.stringify(timetable));
     localStorage.setItem("onboarding_done", "1");
 
     document.getElementById('onboardingWizard').style.display = 'none';
     render();
-    showToast("Welcome! Your profile is ready 🚀");
+    showToast("Welcome! Your profile is ready ");
 }
 
 // ============================================================
@@ -160,39 +172,57 @@ function finishOnboarding() {
 // Codes are stored in localStorage as a simple lookup.
 // In production this would be a cloud DB, but for offline-first we encode the timetable into the code itself.
 
-function generateShareCode() {
-    const payload = { tt: timetable, v: 1 };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    // Use first 6 chars of a hash-like string derived from encoded + timestamp
-    const code = generateShortCode(encoded);
-    localStorage.setItem("my_share_code", code);
-    // Store the full payload locally so others can import via this code if they have same device
-    // For web: we store in localStorage keyed by code. Cloud sync would extend this.
-    const allCodes = JSON.parse(localStorage.getItem("share_codes_db") || "{}");
-    allCodes[code] = payload;
-    localStorage.setItem("share_codes_db", JSON.stringify(allCodes));
-    // Also encode data in code itself (so cross-device works via manual share)
-    const longCode = code + "_" + encoded;
-    localStorage.setItem("my_full_share_code", longCode);
+async function generateShareCode() {
+    try {
+        showToast("Checking cloud...");
 
-    document.getElementById('shareCodeDisplay').style.display = 'block';
-    document.getElementById('shareCodeValue').innerText = code;
-    showToast("Code generated! Share it with classmates.");
-}
+        // 1. SEARCH: Check if this exact timetable already exists in the database
+        const { data: existingData, error: searchError } = await supabaseClient
+            .from('shared_timetables')
+            .select('share_code')
+            .eq('timetable_data', JSON.stringify(timetable))
+            .limit(1);
 
-function generateShortCode(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
+        // 2. IF FOUND: Reuse the existing code
+        if (existingData && existingData.length > 0) {
+            const existingCode = existingData[0].share_code;
+            
+            localStorage.setItem("my_share_code", existingCode);
+            localStorage.setItem("my_full_share_code", existingCode);
+
+            document.getElementById('shareCodeDisplay').style.display = 'block';
+            document.getElementById('shareCodeValue').innerText = existingCode;
+            showToast("Code retrieved! Share it with classmates.");
+            return; // Stop the function here so we don't insert a duplicate
+        }
+
+        // 3. IF NOT FOUND: Generate a brand new code and upload it
+        showToast("Uploading new timetable...");
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        const { error: insertError } = await supabaseClient
+            .from('shared_timetables')
+            .insert([{ share_code: code, timetable_data: timetable }]);
+
+        if (insertError) throw insertError;
+
+        // Save locally for the UI
+        localStorage.setItem("my_share_code", code);
+        localStorage.setItem("my_full_share_code", code);
+
+        document.getElementById('shareCodeDisplay').style.display = 'block';
+        document.getElementById('shareCodeValue').innerText = code;
+        showToast("New code generated! Share it.");
+
+    } catch (err) {
+        console.error("Supabase Error:", err);
+        showToast("Failed to connect to cloud. Try again.", "error");
     }
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    let h = Math.abs(hash);
-    for (let i = 0; i < 6; i++) { code += chars[h % chars.length]; h = Math.floor(h / chars.length) || (h * 31 + i); }
-    return code;
 }
-
 function copyShareCode() {
     const code = document.getElementById('shareCodeValue').innerText;
     const fullCode = localStorage.getItem("my_full_share_code") || code;
@@ -235,40 +265,51 @@ function fallbackCopy(text) {
 function openImportTTModal() { document.getElementById('importTTModal').style.display = 'flex'; }
 function closeImportTTModal() { document.getElementById('importTTModal').style.display = 'none'; }
 
-function importTimetableByCode() {
+async function importTimetableByCode() {
     const raw = document.getElementById('importCodeInput').value.trim().toUpperCase();
-    if (!raw) { showToast("Enter a code", "error"); return; }
-
-    let importedTT = null;
-
-    // Check if it's a full code (contains _) — has encoded payload
-    if (raw.includes("_")) {
-        try {
-            const encodedPart = raw.split("_").slice(1).join("_");
-            const decoded = JSON.parse(decodeURIComponent(escape(atob(encodedPart))));
-            if (decoded.tt) importedTT = decoded.tt;
-        } catch(e) { /* fall through */ }
+    
+    if (!raw || raw.length !== 6) { 
+        showToast("Enter a valid 6-digit code", "error"); 
+        return; 
     }
 
-    // Try local DB lookup (same-device code)
-    if (!importedTT) {
-        const allCodes = JSON.parse(localStorage.getItem("share_codes_db") || "{}");
-        const shortCode = raw.split("_")[0];
-        if (allCodes[shortCode] && allCodes[shortCode].tt) importedTT = allCodes[shortCode].tt;
-    }
+    try {
+        showToast("Searching database...");
 
-    if (!importedTT) {
-        showToast("Code not found. Ask classmate to share the full code.", "error");
-        return;
-    }
+        // Pull the timetable matching the code from Supabase
+        const { data, error } = await supabaseClient
+            .from('shared_timetables')
+            .select('timetable_data')
+            .eq('share_code', raw)
+            .single();
 
-    showConfirm("Import Timetable?", "This will replace your current timetable with the imported one. Attendance data is kept.", () => {
-        timetable = importedTT;
-        localStorage.setItem("custom_timetable", JSON.stringify(timetable));
-        closeImportTTModal();
-        render();
-        showToast("Timetable imported successfully! 🎉");
-    });
+        // If it can't find the code, throw an error
+        if (error || !data) throw new Error("Code not found");
+
+        const importedTT = data.timetable_data;
+
+        // Ask the user to confirm, just like before
+        showConfirm("Import Timetable?", "This will replace your current timetable with the imported one. Attendance data is kept.", () => {
+            closeImportTTModal();
+            
+            // Check if we are currently inside the Onboarding Wizard
+            const wizard = document.getElementById('onboardingWizard');
+            if (wizard && wizard.style.display === 'flex') {
+                // We are in onboarding! Route the data through the finish function
+                finishOnboarding(importedTT);
+            } else {
+                // We are just in the normal app settings. Do a standard replace.
+                timetable = importedTT;
+                localStorage.setItem("custom_timetable", JSON.stringify(timetable));
+                render();
+                showToast("Timetable imported successfully! 🎉");
+            }
+        });
+
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        showToast("Code not found in cloud. Check the code and try again.", "error");
+    }
 }
 
 // ============================================================
@@ -770,7 +811,16 @@ function renderSummary(){
   }
   
   const overall = tt ? Math.round((tp / tt) * 100) : 0; 
-  let overallColor = "var(--green)"; if(overall < MIN_ATTENDANCE) overallColor = "var(--red)"; else if(overall < MIN_ATTENDANCE + 10) overallColor = "var(--yellow)";
+  let overallColor = "var(--green)";
+  if (overall < 60) {
+      overallColor = "var(--red)"; // Below 60: Danger
+  } else if (overall < MIN_ATTENDANCE - 5) {
+      overallColor = "var(--yellow)"; // e.g., 60 to 69: Warning (Orange/Yellow)
+  } else if (overall < MIN_ATTENDANCE) {
+      overallColor = "#84cc16"; // e.g., 70 to 74: Almost there (Yellow-Green)
+  } else {
+      overallColor = "var(--green)"; // Target hit: Safe
+  }
   let overallMsg = ""; totalRemaining = Math.max(0, totalRemaining - totalPredictedAbsences);
 
   if(tt > 0) { if (overall < MIN_ATTENDANCE) { const overallMaxPossibleP = tp + totalRemaining; const overallMaxPossibleT = tt + totalRemaining; const overallMaxPercent = overallMaxPossibleT ? (overallMaxPossibleP / overallMaxPossibleT) : 0; if(semEndDateExists && overallMaxPercent < target) { overallMsg = `Impossible to reach ${MIN_ATTENDANCE}% (Max: ${Math.round(overallMaxPercent * 100)}%)`; } else { const overallNeeded = Math.ceil( (target * tt - tp) / (1 - target) ); overallMsg = `Attend next ${overallNeeded} classes to hit ${MIN_ATTENDANCE}%`; } } else { const overallBunk = Math.floor((tp / target) - tt); if(overallBunk > 0) overallMsg = `Can safely bunk ${overallBunk} classes`; else overallMsg = "Don't miss any upcoming classes"; } }

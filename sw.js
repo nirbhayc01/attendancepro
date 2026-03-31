@@ -23,8 +23,9 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // CRITICAL FIX: Ignore Firebase requests so they don't fail offline
-  if (e.request.url.includes("firebase") || 
+  // CRITICAL FIX: Ignore Database requests so they don't fail offline
+  if (e.request.url.includes("supabase.co") || 
+      e.request.url.includes("firebase") || 
       e.request.url.includes("googleapis") || 
       e.request.url.includes("firestore")) {
       return; 

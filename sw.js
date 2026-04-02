@@ -1,4 +1,4 @@
-const CACHE_NAME = "attendance-pro-v14-fix";
+const CACHE_NAME = "attendance-pro-v20-fix";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -45,29 +45,28 @@ self.addEventListener("fetch", (e) => {
       })
   );
 });
-// Listen for Push Notifications
+// Handle Push Notifications
 self.addEventListener('push', function(event) {
     if (!event.data) return;
 
     const data = event.data.json();
     
-    // Optional: We can write logic here to check IndexedDB or cache 
-    // to see if they already marked attendance before showing this!
-    // For now, we will just show it.
+    // Force GitHub Pages to find the exact absolute path for the images
+    const iconUrl = new URL('icon.png', self.location).href;
+    const badgeUrl = new URL('badge.png', self.location).href;
 
     const options = {
         body: data.body,
-        icon: './icon.png',
-        badge: './icon.png', // Small icon for Android status bar
+        icon: iconUrl,             // The large colorful icon in the drawer
+        badge: badgeUrl,           // The tiny transparent/white icon in the status bar
         vibrate: [200, 100, 200],
-        data: { url: './index.html' } // Where to go when tapped
+        data: { url: self.registration.scope } // Opens the app when tapped
     };
 
     event.waitUntil(
         self.registration.showNotification(data.title, options)
     );
 });
-
 // Handle Notification Clicks
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();

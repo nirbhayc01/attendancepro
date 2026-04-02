@@ -1,6 +1,7 @@
 {
   "name": "Attendance Pro",
   "short_name": "Attendance",
+  "description": "A smart academic tracker to manage your college timetable, monitor attendance percentages, and securely predict future classes.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0B0F19",

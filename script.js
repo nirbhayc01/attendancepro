@@ -793,21 +793,15 @@ function loadLectures(){
             </svg>`;
       }
 
-     div.innerHTML = `
-        <div class="lec-top" style="align-items: flex-start;">
-            <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; margin-right: 12px;">
-                <div class="lec-subject" style="margin-right: 0; font-size: 17px;">${subject} ${weightBadge}</div>
-                <div style="text-align: left;"><span class="lec-time" style="display: inline-block;">${time}</span></div>
-            </div>
-            <button class="note-btn" onclick="event.stopPropagation(); addNote('${subject}')" style="flex-shrink: 0;">${ICONS.note}</button>
-        </div>
-        ${statusHTML}
-        <div class="action-row" style="display:${locked ? 'none' : 'flex'}">
-            <button class="btn-pill present" onclick="markAttendance('${subject}', '${time}', 'Present', ${weight})">Present</button>
-            <button class="btn-pill absent" onclick="markAttendance('${subject}', '${time}', 'Absent', ${weight})">Absent</button>
-            <button class="btn-pill cancelled" onclick="markAttendance('${subject}', '${time}', 'Cancelled', ${weight})">Off</button>
-        </div>
-    `;
+     const div = document.createElement("div");
+      div.className = "holiday-card";
+      div.style.borderColor = colorTheme;
+      div.innerHTML = `
+          ${svgIcon}
+          <div class="weekend-title">${activeHoliday.name}</div>
+          <div style="font-size:14px; color:var(--text-muted); font-weight:500;">${subtitle}</div>
+      `;
+      container.appendChild(div);
           
       if(emptyState) emptyState.style.display = 'none';
       return;

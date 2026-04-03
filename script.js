@@ -1253,7 +1253,7 @@ function saveTimePicker() {
 }
 
 // ============================================================
-// CUSTOM PULL-TO-REFRESH LOGIC (PILL DESIGN)
+// CUSTOM PULL-TO-REFRESH LOGIC (PILL DESIGN) - FIXED
 // ============================================================
 let ptrStartY = 0;
 let ptrCurrentY = 0;
@@ -1261,11 +1261,22 @@ let isPulling = false;
 const ptrIndicator = document.getElementById('ptr-indicator');
 const ptrPill = document.getElementById('ptr-pill');
 const ptrText = document.getElementById('ptr-text');
-const PTR_THRESHOLD = 65; 
+
+// INCREASED THRESHOLD: Was 65, now 80. Requires a longer physical pull.
+const PTR_THRESHOLD = 80; 
 
 document.addEventListener('touchstart', (e) => {
+    // --- 1. SAFETY CHECKS ---
+    // Abort if we are not on the Home tab
     if (!document.getElementById('tab-home').classList.contains('active')) return;
-    if (window.scrollY > 0) return;
+    
+    // Abort if the Settings modal is open
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal && settingsModal.style.display === 'flex') return;
+    
+    // Abort if we are not STRICTLY at the very top of the page.
+    // (Using 5px instead of 0px to account for mobile sub-pixel quirks)
+    if (window.scrollY > 5) return;
 
     ptrStartY = e.touches[0].clientY;
     isPulling = true;
@@ -1276,14 +1287,24 @@ document.addEventListener('touchstart', (e) => {
 
 document.addEventListener('touchmove', (e) => {
     if (!isPulling) return;
+    
+    // --- 2. MOMENTUM ABORT ---
+    // If the browser decides to scroll the page natively while we are pulling,
+    // instantly abort the custom pull-to-refresh to prevent glitches.
+    if (window.scrollY > 5) {
+        isPulling = false;
+        ptrIndicator.style.transform = `translateY(-100%)`;
+        return;
+    }
+
     ptrCurrentY = e.touches[0].clientY;
     let pullDistance = ptrCurrentY - ptrStartY;
 
     if (pullDistance > 0) {
-        let visualDistance = Math.min(pullDistance * 0.4, 100); 
+        // HEAVIER FRICTION: Changed 0.4 to 0.35. Makes it feel "harder" to pull down.
+        let visualDistance = Math.min(pullDistance * 0.35, 120); 
         ptrIndicator.style.transform = `translateY(${visualDistance - 60}px)`; 
         
-        // If they pull past the  threshold, glow blue and change text
         if (visualDistance >= PTR_THRESHOLD) {
             ptrIndicator.classList.add('ptr-ready');
             ptrText.innerText = "Release to refresh";
@@ -1298,20 +1319,21 @@ document.addEventListener('touchend', () => {
     if (!isPulling) return;
     isPulling = false;
     let pullDistance = ptrCurrentY - ptrStartY;
-    let visualDistance = pullDistance * 0.4;
+    
+    // Ensure we use the same heavier friction multiplier here (0.35)
+    let visualDistance = pullDistance * 0.35; 
     
     ptrIndicator.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
 
     if (visualDistance >= PTR_THRESHOLD) {
-        // Trigger the sync
         ptrIndicator.classList.remove('ptr-ready');
         ptrIndicator.classList.add('ptr-spinning');
         ptrText.innerText = "Refreshing...";
-        ptrIndicator.style.transform = `translateY(25px)`; // Hold just below header
+        ptrIndicator.style.transform = `translateY(25px)`; 
 
         setTimeout(() => {
             render(); 
-            showToast("Complete!");
+            showToast("Refreshed");
             
             ptrIndicator.style.transform = `translateY(-100%)`;
             setTimeout(() => {
@@ -1320,7 +1342,6 @@ document.addEventListener('touchend', () => {
         }, 800); 
         
     } else {
-        // Cancelled pull
         ptrIndicator.style.transform = `translateY(-100%)`;
     }
     

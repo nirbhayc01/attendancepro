@@ -529,7 +529,6 @@ function closePasswordModal() { document.getElementById('passwordModal').style.d
 let USER_PIN = localStorage.getItem("user_pin") || "0000";
 let MIN_ATTENDANCE = parseInt(localStorage.getItem("target_percent")) || 75;
 const defaultTimetable = {}; // Empty — users set up via onboarding or timetable editor
-if ("serviceWorker" in navigator) { navigator.serviceWorker.register("./sw.js").then(reg => { reg.addEventListener('updatefound', () => { const newWorker = reg.installing; newWorker.addEventListener('statechange', () => { if (newWorker.state === 'installed' && navigator.serviceWorker.controller) { showConfirm("Update Available", "A new version of the app is ready.", () => window.location.reload()); } }); }); }); }
 
 function getStorageDateKey(date) { const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, '0'); const d = String(date.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; }
 const today = new Date();

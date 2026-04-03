@@ -21,6 +21,44 @@
       "purpose": "any maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "screen1.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screen2.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screen3.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screen4.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screen5.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screen6.png",
+      "sizes": "1080x2408",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
   "id": "NIR2006",
   "lang": "en",
   "categories": [

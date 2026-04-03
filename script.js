@@ -1284,7 +1284,7 @@ document.addEventListener('touchmove', (e) => {
         let visualDistance = Math.min(pullDistance * 0.4, 100); 
         ptrIndicator.style.transform = `translateY(${visualDistance - 60}px)`; 
         
-        // If they pull past the threshold, glow blue and change text
+        // If they pull past the  threshold, glow blue and change text
         if (visualDistance >= PTR_THRESHOLD) {
             ptrIndicator.classList.add('ptr-ready');
             ptrText.innerText = "Release to refresh";

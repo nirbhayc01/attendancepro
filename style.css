@@ -350,3 +350,81 @@ img, a { -webkit-touch-callout: none; -webkit-user-drag: none; pointer-events: n
     50% { transform: scale(0.7); opacity: 0.05; }
 }
 .anim-ghost-shadow { animation: shadowScale 3s infinite ease-in-out; transform-origin: center; }
+
+/* --- MODERN PILL PULL-TO-REFRESH --- */
+.ptr-indicator {
+    position: fixed;
+    top: 60px; /* Hides just under the glass header */
+    left: 0;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 90;
+    transform: translateY(-100%);
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ptr-pill {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 30px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: scale(0.95);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#ptr-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+}
+
+/* The gradient spinning ring */
+.ptr-loader {
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent);
+    border-right-color: var(--purple);
+    border-radius: 50%;
+    display: none; /* Hidden until syncing */
+}
+
+/* State 1: Pulled far enough (Ready to release) */
+.ptr-ready .ptr-pill {
+    transform: scale(1.05);
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.15);
+}
+.ptr-ready #ptr-text {
+    color: var(--accent);
+}
+
+/* State 2: Actually syncing */
+.ptr-spinning .ptr-pill {
+    transform: scale(1);
+    border-color: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.08);
+}
+.ptr-spinning #ptr-text {
+    color: white;
+}
+.ptr-spinning .ptr-loader {
+    display: block;
+    animation: ptr-spin 0.6s linear infinite;
+}
+
+@keyframes ptr-spin {
+    100% { transform: rotate(360deg); }
+}

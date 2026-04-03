@@ -331,7 +331,7 @@ async function importTimetableByCode() {
                 timetable = importedTT;
                 localStorage.setItem("custom_timetable", JSON.stringify(timetable));
                 render();
-                showToast("Timetable imported successfully! 🎉");
+                showToast("Timetable imported successfully!");
             }
         });
 
@@ -972,9 +972,9 @@ function loadPastTimetable(){ const input = document.getElementById("pastDate");
 function pastMark(sub, time, stat, btn){ pastBuffer = pastBuffer.filter(x => !(x.subject === sub && x.time === time)); pastBuffer.push({ subject: sub, time: time, status: stat }); const parent = btn.parentElement; parent.querySelectorAll('.btn-pill').forEach(b => { b.className = 'btn-pill btn-secondary'; }); let activeClass = stat === "Present" ? "present" : (stat === "Absent" ? "absent" : "cancelled"); btn.className = `btn-pill ${activeClass}`; }
 function addPastExtra(status){ const subject = document.getElementById("pastExtraSubject").value; if(pastBuffer.find(x=>x.subject===subject && x.time==="Extra")){ showToast("Already in list", "error"); return; } pastBuffer.push({subject, time:"Extra", status}); const list = document.getElementById("existingExtrasList"); list.innerHTML += `<div class="task-item" style="margin-bottom:8px;"><span><span style="font-weight:600;">${subject}</span> <span style="font-size:12px; color:var(--text-muted);">(Extra)</span></span> <span class="${status==='Present'?'text-green':'text-red'}" style="font-weight:700;">${status}</span></div>`; }
 function removePastExtra(subject){ pastBuffer = pastBuffer.filter(x => !(x.subject === subject && x.time === "Extra")); loadPastTimetable(); }
-function savePastAttendance(){ if(!pastDateKey){ showToast("Select a date", "error"); return; } if(pastBuffer.length === 0){ showToast("No data to save", "error"); return; } if(data.history[pastDateKey]) { data.history[pastDateKey].forEach(oldEntry => { if(oldEntry.status !== "Cancelled" && data.totals[oldEntry.subject]){ data.totals[oldEntry.subject].t--; if(oldEntry.status === "Present") data.totals[oldEntry.subject].p--; } }); } data.history[pastDateKey] = pastBuffer; pastBuffer.forEach(h => { if(h.status !== "Cancelled"){ data.totals[h.subject] ??= {p:0,t:0}; data.totals[h.subject].t++; if(h.status === "Present") data.totals[h.subject].p++; } const lockKey = pastDateKey + "_" + h.subject + "_" + h.time; data.locks[lockKey] = true; }); save(); render(); showToast("History Updated ✅"); document.getElementById("pastDate").value = ""; document.getElementById("pastLectures").innerHTML = ""; document.getElementById("pastExtra").innerHTML = ""; }
+function savePastAttendance(){ if(!pastDateKey){ showToast("Select a date", "error"); return; } if(pastBuffer.length === 0){ showToast("No data to save", "error"); return; } if(data.history[pastDateKey]) { data.history[pastDateKey].forEach(oldEntry => { if(oldEntry.status !== "Cancelled" && data.totals[oldEntry.subject]){ data.totals[oldEntry.subject].t--; if(oldEntry.status === "Present") data.totals[oldEntry.subject].p--; } }); } data.history[pastDateKey] = pastBuffer; pastBuffer.forEach(h => { if(h.status !== "Cancelled"){ data.totals[h.subject] ??= {p:0,t:0}; data.totals[h.subject].t++; if(h.status === "Present") data.totals[h.subject].p++; } const lockKey = pastDateKey + "_" + h.subject + "_" + h.time; data.locks[lockKey] = true; }); save(); render(); showToast("History Updated "); document.getElementById("pastDate").value = ""; document.getElementById("pastLectures").innerHTML = ""; document.getElementById("pastExtra").innerHTML = ""; }
 
-function toggleUndo(){ const sec = document.getElementById("undoSection"); sec.style.display = (sec.style.display === "none" || sec.style.display === "") ? "block" : "none"; if(sec.style.display === "block"){ sec.innerHTML = ""; if(!data.history[dateKey] || data.history[dateKey].length === 0){ sec.innerHTML = "<div style='text-align:center; color:var(--text-muted); font-size:14px; font-weight:600;'>Nothing to undo today 😴</div>"; return; } data.history[dateKey].forEach((h,i)=>{ sec.innerHTML += `<div class="task-item"><span><span style="font-weight:600;">${h.subject}</span> <span style="font-size:13px; color:var(--text-muted); margin-left:6px;">(${h.status})</span></span> <button class="del-task-btn" onclick="event.stopPropagation(); undo('${dateKey}',${i})">${ICONS.undo}</button></div>`; }); } }
+function toggleUndo(){ const sec = document.getElementById("undoSection"); sec.style.display = (sec.style.display === "none" || sec.style.display === "") ? "block" : "none"; if(sec.style.display === "block"){ sec.innerHTML = ""; if(!data.history[dateKey] || data.history[dateKey].length === 0){ sec.innerHTML = "<div style='text-align:center; color:var(--text-muted); font-size:14px; font-weight:600;'>Nothing to undo today</div>"; return; } data.history[dateKey].forEach((h,i)=>{ sec.innerHTML += `<div class="task-item"><span><span style="font-weight:600;">${h.subject}</span> <span style="font-size:13px; color:var(--text-muted); margin-left:6px;">(${h.status})</span></span> <button class="del-task-btn" onclick="event.stopPropagation(); undo('${dateKey}',${i})">${ICONS.undo}</button></div>`; }); } }
 function lockNoExtra(){ const key = dateKey + "_NO_EXTRA"; if(data.locks[key]) return; data.locks[key] = true; save(); render(); showToast("Locked for today"); }
 function getDayName(dateStr){ const d = new Date(dateStr + "T00:00:00"); return isNaN(d) ? "" : d.toLocaleDateString("en-US", { weekday: "long" }); }
 function formatDateDDMMYYYY(isoDate){ if(!isoDate) return ""; const [y, m, d] = isoDate.split("-"); return `${d}/${m}/${y}`; }
@@ -1252,3 +1252,79 @@ function saveTimePicker() {
     }
     closeTimePicker(); 
 }
+
+// ============================================================
+// CUSTOM PULL-TO-REFRESH LOGIC (PILL DESIGN)
+// ============================================================
+let ptrStartY = 0;
+let ptrCurrentY = 0;
+let isPulling = false;
+const ptrIndicator = document.getElementById('ptr-indicator');
+const ptrPill = document.getElementById('ptr-pill');
+const ptrText = document.getElementById('ptr-text');
+const PTR_THRESHOLD = 65; 
+
+document.addEventListener('touchstart', (e) => {
+    if (!document.getElementById('tab-home').classList.contains('active')) return;
+    if (window.scrollY > 0) return;
+
+    ptrStartY = e.touches[0].clientY;
+    isPulling = true;
+    ptrIndicator.style.transition = 'none'; 
+    ptrIndicator.classList.remove('ptr-ready', 'ptr-spinning');
+    ptrText.innerText = "Pull down to refresh";
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    ptrCurrentY = e.touches[0].clientY;
+    let pullDistance = ptrCurrentY - ptrStartY;
+
+    if (pullDistance > 0) {
+        let visualDistance = Math.min(pullDistance * 0.4, 100); 
+        ptrIndicator.style.transform = `translateY(${visualDistance - 60}px)`; 
+        
+        // If they pull past the threshold, glow blue and change text
+        if (visualDistance >= PTR_THRESHOLD) {
+            ptrIndicator.classList.add('ptr-ready');
+            ptrText.innerText = "Release to refresh";
+        } else {
+            ptrIndicator.classList.remove('ptr-ready');
+            ptrText.innerText = "Pull down to refresh";
+        }
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', () => {
+    if (!isPulling) return;
+    isPulling = false;
+    let pullDistance = ptrCurrentY - ptrStartY;
+    let visualDistance = pullDistance * 0.4;
+    
+    ptrIndicator.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+
+    if (visualDistance >= PTR_THRESHOLD) {
+        // Trigger the sync
+        ptrIndicator.classList.remove('ptr-ready');
+        ptrIndicator.classList.add('ptr-spinning');
+        ptrText.innerText = "Refreshing...";
+        ptrIndicator.style.transform = `translateY(25px)`; // Hold just below header
+
+        setTimeout(() => {
+            render(); 
+            showToast("Complete!");
+            
+            ptrIndicator.style.transform = `translateY(-100%)`;
+            setTimeout(() => {
+                ptrIndicator.classList.remove('ptr-spinning');
+            }, 400);
+        }, 800); 
+        
+    } else {
+        // Cancelled pull
+        ptrIndicator.style.transform = `translateY(-100%)`;
+    }
+    
+    ptrStartY = 0;
+    ptrCurrentY = 0;
+});

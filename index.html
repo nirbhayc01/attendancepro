@@ -446,6 +446,18 @@
     </div>
 </div>
 
+<div id="endSemModal" class="confirm-overlay" style="z-index: 100000;">
+    <div class="confirm-box">
+        <div class="confirm-title" style="color: var(--red);">End Semester</div>
+        <div class="confirm-desc">Give this semester a name before archiving it.</div>
+        <input type="text" id="endSemNameInput" placeholder="e.g. Fall 2024" style="margin-bottom:20px; text-align:center; font-weight:bold; font-size: 16px;">
+        <div class="confirm-actions">
+            <button class="btn-pill btn-secondary" onclick="document.getElementById('endSemModal').style.display='none'">Cancel</button>
+            <button class="btn-pill btn-danger" onclick="confirmEndSemester()">Archive Data</button>
+        </div>
+    </div>
+</div>
+
 <div id="eventModal" class="confirm-overlay">
     <div class="confirm-box" style="padding-bottom:20px;">
         <div class="confirm-title" id="eventTitle" style="margin-bottom:20px;">Add Calendar Event</div>
@@ -510,21 +522,39 @@
 </div>
 
 <div id="timePickerModal" class="confirm-overlay" style="z-index: 99999;">
-    <div class="confirm-box">
-        <div class="confirm-title" style="margin-bottom: 20px;">Select Class Time</div>
-        <div style="display:flex; gap:12px; margin-bottom:24px;">
-            <div style="flex:1;">
-                <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-bottom:6px;">Start Time</label>
-                <input type="time" id="tpStartTime" style="font-size: 16px; padding: 12px; text-align: center;">
-            </div>
-            <div style="flex:1;">
-                <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-bottom:6px;">End Time</label>
-                <input type="time" id="tpEndTime" style="font-size: 16px; padding: 12px; text-align: center;">
-            </div>
+    <div class="confirm-box" style="padding-bottom: 24px;">
+        <div class="confirm-title" style="margin-bottom: 20px;">Class Time</div>
+        
+        <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-bottom:8px;">Start Time</label>
+        <div style="display:flex; gap:8px; margin-bottom:24px;">
+            <select id="tpStartHour" class="custom-select-source" style="flex:1;">
+                <option value="01">01</option><option value="02">02</option><option value="03">03</option>
+                <option value="04">04</option><option value="05">05</option><option value="06">06</option>
+                <option value="07">07</option><option value="08">08</option><option value="09" selected>09</option>
+                <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+            </select>
+            <div style="display:flex; align-items:center; font-weight:800; color:var(--text-muted);">:</div>
+            <select id="tpStartMin" class="custom-select-source" style="flex:1;">
+                <option value="00">00</option><option value="15">15</option>
+                <option value="30">30</option><option value="45">45</option><option value="50">50</option>
+            </select>
+            <select id="tpStartAmPm" class="custom-select-source" style="flex:1;">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+            </select>
         </div>
+
+        <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-bottom:8px;">Class Duration</label>
+        <div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;">
+            <button class="ob-chip active" id="dur1" onclick="selectDuration(1, this)">1 hr</button>
+            <button class="ob-chip" id="dur1.5" onclick="selectDuration(1.5, this)">1.5 hr</button>
+            <button class="ob-chip" id="dur2" onclick="selectDuration(2, this)">2 hr</button>
+            <button class="ob-chip" id="dur3" onclick="selectDuration(3, this)">3 hr</button>
+        </div>
+
         <div class="confirm-actions">
             <button class="btn-pill btn-secondary" onclick="closeTimePicker()">Cancel</button>
-            <button class="btn-pill btn-primary" onclick="saveTimePicker()">Save Time</button>
+            <button class="btn-pill btn-primary" onclick="saveTimePicker()">Save Slot</button>
         </div>
     </div>
 </div>

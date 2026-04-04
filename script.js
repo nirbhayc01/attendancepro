@@ -11,6 +11,37 @@ const supabaseUrl = 'https://gahmbbudkhlyliuwaqcy.supabase.co';
 const supabaseKey = 'sb_publishable_g3nHitWdObU8OMa8Fc9LjQ_VquLQE0k';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+// ============================================================
+// GLOBAL SCROLL LOCK (PREVENTS BACKGROUND SCROLLING)
+// ============================================================
+const allAppModals = document.querySelectorAll('.confirm-overlay, #settingsModal, #onboardingWizard');
+
+const popupScrollObserver = new MutationObserver(() => {
+    let isAnyModalOpen = false;
+    
+    // Check if ANY modal is currently visible
+    allAppModals.forEach(m => {
+        if (m.style.display === 'flex' || m.style.display === 'block') {
+            isAnyModalOpen = true;
+        }
+    });
+
+    // Lock both body and html to ensure it works flawlessly on iOS & Android
+    if (isAnyModalOpen) {
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+    }
+});
+
+// Attach the watcher to all popups
+allAppModals.forEach(m => {
+    popupScrollObserver.observe(m, { attributes: true, attributeFilter: ['style'] });
+});
+// ============================================================
+
 function isFirstRun() {
     return !localStorage.getItem("onboarding_done");
 }
@@ -18,9 +49,32 @@ function isFirstRun() {
 function launchOnboarding() {
     const wiz = document.getElementById("onboardingWizard");
     wiz.style.display = "flex";
-    // Pre-check default weekend
+    
+    // 1. PRE-FILL STUDENT NAME
+    const savedName = localStorage.getItem("student_name");
+    if (savedName) document.getElementById('obStudentName').value = savedName;
+
+    // 2. PRE-FILL TARGET PERCENTAGE
+    const savedTarget = localStorage.getItem("target_percent");
+    if (savedTarget) {
+        obTarget = parseInt(savedTarget);
+        let chipFound = false;
+        document.querySelectorAll('#obStep1 .ob-chip').forEach(c => {
+            if (c.innerText.includes(savedTarget + "%")) {
+                document.querySelectorAll('#obStep1 .ob-chip').forEach(ch => ch.classList.remove('active'));
+                c.classList.add('active');
+                chipFound = true;
+            }
+        });
+        // If it was a custom number (e.g., 72%), put it in the input box
+        if (!chipFound) document.getElementById('obTargetCustom').value = savedTarget;
+    }
+
+    // 3. PRE-FILL WEEKENDS
+    document.querySelectorAll('#obStep1 .ob-chip[id^="wk"]').forEach(el => el.classList.remove('active'));
     obWeekends.forEach(d => {
-        const el = document.getElementById("wk" + d.replace("day",""));
+        // e.g., mapping "Sunday" to "wkSun"
+        const el = document.getElementById("wk" + d.slice(0, 3)); 
         if (el) el.classList.add("active");
     });
 }
@@ -354,33 +408,46 @@ function getSlotWeight(slot) {
 // ============================================================
 //  FEATURE 4: SEMESTER LIFECYCLE MANAGEMENT
 // ============================================================
+// ============================================================
+//  FEATURE 4: SEMESTER LIFECYCLE MANAGEMENT (UPDATED)
+// ============================================================
 function endSemester() {
-    showConfirm("End Semester?", "Your data will be archived to 'Past Semesters' and the app will reset for a new term.", () => {
-        const now = new Date();
-        const semLabel = `Semester — ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-        const archive = {
-            id: Date.now(),
-            label: semLabel,
-            archivedAt: now.toISOString(),
-            semStart: localStorage.getItem("sem_start_date") || "",
-            semEnd: localStorage.getItem("sem_end_date") || now.toISOString().split("T")[0],
-            target: MIN_ATTENDANCE,
-            timetable: timetable,
-            data: JSON.parse(JSON.stringify(data))
-        };
-        const pastSems = JSON.parse(localStorage.getItem("past_semesters") || "[]");
-        pastSems.unshift(archive);
-        localStorage.setItem("past_semesters", JSON.stringify(pastSems));
-        // Reset current data
-        localStorage.removeItem("attendance");
-        localStorage.removeItem("sem_start_date");
-        localStorage.removeItem("sem_end_date");
-        localStorage.setItem("last_sync_time", "0");
-        data = { totals:{}, history:{}, locks:{}, tasks:[], holidays:[] };
-        save(false);
-        render();
-        showToast("Semester archived! Fresh start 🎓");
-    });
+    const now = new Date();
+    // Pre-fill a suggestion like "Fall 2024" or "Semester - April 2024"
+    const defaultName = `Semester — ${now.toLocaleString('default', { month: 'short', year: 'numeric' })}`;
+    document.getElementById('endSemNameInput').value = defaultName;
+    document.getElementById('endSemModal').style.display = 'flex';
+}
+
+function confirmEndSemester() {
+    let semLabel = document.getElementById('endSemNameInput').value.trim();
+    if (!semLabel) semLabel = "Unnamed Semester"; // Fallback
+
+    const now = new Date();
+    const archive = {
+        id: Date.now(),
+        label: semLabel,
+        archivedAt: now.toISOString(),
+        semStart: localStorage.getItem("sem_start_date") || "",
+        semEnd: localStorage.getItem("sem_end_date") || now.toISOString().split("T")[0],
+        target: MIN_ATTENDANCE,
+        timetable: timetable,
+        data: JSON.parse(JSON.stringify(data))
+    };
+    
+    const pastSems = JSON.parse(localStorage.getItem("past_semesters") || "[]");
+    pastSems.unshift(archive);
+    localStorage.setItem("past_semesters", JSON.stringify(pastSems));
+    
+    // Clean the slate for the new term!
+    localStorage.removeItem("attendance");
+    localStorage.removeItem("sem_start_date");
+    localStorage.removeItem("sem_end_date");
+    localStorage.removeItem("custom_timetable"); 
+    localStorage.removeItem("onboarding_done"); // Triggers Wizard on reload
+    
+    document.getElementById('endSemModal').style.display = 'none';
+    location.reload(); 
 }
 
 function openSemArchiveModal() {
@@ -412,16 +479,59 @@ function openSemArchiveModal() {
 function closeSemArchiveModal() { document.getElementById('semArchiveModal').style.display = 'none'; }
 
 function exportSemArchive(idx) {
+    if (!window.jspdf) { showToast("PDF Library loading, try again", "error"); return; }
+    
     const pastSems = JSON.parse(localStorage.getItem("past_semesters") || "[]");
     const sem = pastSems[idx];
     if (!sem) return;
-    const blob = new Blob([JSON.stringify({ version:15, timestamp:sem.archivedAt, data:sem.data }, null, 2)], { type:"application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `semester_archive_${sem.id}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    showToast("Archive Exported");
+
+    showToast("Generating PDF Report...");
+    const { jsPDF } = window.jspdf; 
+    const doc = new jsPDF();
+
+    doc.setFontSize(22); doc.setTextColor(15, 23, 42); 
+    doc.text(`Archive: ${sem.label}`, 14, 20);
+    
+    doc.setFontSize(11); doc.setTextColor(100); 
+    const generatedDate = new Date(sem.archivedAt).toLocaleDateString(); 
+    let savedName = localStorage.getItem("student_name") || "Student Profile"; 
+    
+    doc.text(`Student: ${savedName}`, 14, 30); 
+    doc.text(`Archived on: ${generatedDate}`, 14, 36); 
+    doc.text(`Target Attendance: ${sem.target}%`, 14, 42);
+    
+    doc.setFontSize(14); doc.setTextColor(15, 23, 42); 
+    doc.text("Subject Summary", 14, 55);
+
+    const summaryBody = []; let tp = 0, tt = 0;
+    // Iterate through the specific archived semester data
+    for (let s in sem.data.totals) { 
+        const { p, t } = sem.data.totals[s]; 
+        const percent = t ? Math.round((p / t) * 100) : 0; 
+        tp += p; tt += t; 
+        let status = percent >= sem.target ? "Safe" : "Low"; 
+        summaryBody.push([s, p.toString(), t.toString(), `${percent}%`, status]); 
+    }
+    const overall = tt ? Math.round((tp / tt) * 100) : 0; 
+    summaryBody.push(["OVERALL TOTAL", tp.toString(), tt.toString(), `${overall}%`, overall >= sem.target ? "Safe" : "Low"]);
+
+    doc.autoTable({ 
+        startY: 60, head: [['Subject', 'Present', 'Total', 'Percentage', 'Status']], 
+        body: summaryBody, theme: 'striped', 
+        headStyles: { fillColor: [15, 23, 42] }, alternateRowStyles: { fillColor: [241, 245, 249] }, 
+        willDrawCell: function (data) { 
+            if (data.section === 'body' && data.column.index === 4) { 
+                if (data.cell.raw === 'Safe') doc.setTextColor(16, 185, 129); 
+                else if (data.cell.raw === 'Low') doc.setTextColor(239, 68, 68); 
+                doc.setFont(undefined, 'bold'); 
+            } 
+            if (data.section === 'body' && data.row.index === summaryBody.length - 1) { doc.setFont(undefined, 'bold'); } 
+        } 
+    });
+
+    const safeFilename = sem.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`Attendance_Archive_${safeFilename}.pdf`); 
+    showToast("Archive PDF Downloaded!");
 }
 
 // Weekend days helpers
@@ -1060,16 +1170,56 @@ function saveSettings() {
     showToast("Preferences Saved ✓");
 }
 function openSettings() { 
-    modal.style.display = "flex"; document.getElementById("targetInput").value = MIN_ATTENDANCE; document.getElementById("semStartInput").value = localStorage.getItem("sem_start_date") || ""; document.getElementById("semEndInput").value = localStorage.getItem("sem_end_date") || ""; document.getElementById("editDaySelect").value = day; 
-    // Load weekend chips
+    modal.style.display = "flex"; 
+    document.getElementById("targetInput").value = MIN_ATTENDANCE; 
+    document.getElementById("semStartInput").value = localStorage.getItem("sem_start_date") || ""; 
+    document.getElementById("semEndInput").value = localStorage.getItem("sem_end_date") || ""; 
+    
+    // 1. Load weekend chips and Profile
     document.getElementById("settingStudentName").value = localStorage.getItem("student_name") || "";
     const savedWeekends = JSON.parse(localStorage.getItem("weekend_days") || '["Sunday"]');
     ["Sunday","Saturday","Friday"].forEach(d => {
         const chip = document.getElementById("settingWk" + d.slice(0,3));
         if(chip) chip.classList.toggle('active', savedWeekends.includes(d));
     });
-    const renameSelect = document.getElementById("renameOldSubject"); if (renameSelect.parentNode.classList.contains("custom-select-wrapper")) { const wrapper = renameSelect.parentNode; wrapper.parentNode.insertBefore(renameSelect, wrapper); wrapper.remove(); } const subjectList = getAllSubjects(); renameSelect.innerHTML = subjectList.map(s => `<option value="${s}">${s}</option>`).join("");
-    renderSettingsCalendar(); renderHolidays(); renderEditRows(); setupCustomSelects(); 
+
+    // --- 2. NEW: FILTER WEEKENDS FROM TIMETABLE EDITOR ---
+    const editDaySelect = document.getElementById("editDaySelect");
+    // Unwrap the custom dropdown if it exists so we can safely edit the raw HTML inside
+    if (editDaySelect.parentNode.classList.contains("custom-select-wrapper")) {
+        const wrapper = editDaySelect.parentNode;
+        wrapper.parentNode.insertBefore(editDaySelect, wrapper);
+        wrapper.remove();
+    }
+    
+    // Generate only the active days
+    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const activeDays = allDays.filter(d => !savedWeekends.includes(d));
+    editDaySelect.innerHTML = activeDays.map(d => `<option value="${d}">${d}</option>`).join("");
+
+    // Set the default selected day to 'Today', unless today is a weekend
+    let defaultDay = day; // 'day' is your global variable for today's name
+    if (savedWeekends.includes(defaultDay)) {
+        defaultDay = activeDays.length > 0 ? activeDays[0] : "Monday";
+    }
+    editDaySelect.value = defaultDay;
+    // -----------------------------------------------------
+
+    // 3. Rebuild the Subject Rename dropdown
+    const renameSelect = document.getElementById("renameOldSubject"); 
+    if (renameSelect.parentNode.classList.contains("custom-select-wrapper")) { 
+        const wrapper = renameSelect.parentNode; 
+        wrapper.parentNode.insertBefore(renameSelect, wrapper); 
+        wrapper.remove(); 
+    } 
+    const subjectList = getAllSubjects(); 
+    renameSelect.innerHTML = subjectList.map(s => `<option value="${s}">${s}</option>`).join("");
+
+    // 4. Render everything and rebuild custom dropdown UIs
+    renderSettingsCalendar(); 
+    renderHolidays(); 
+    renderEditRows(); 
+    setupCustomSelects(); 
 }
 function closeSettings() { modal.style.display = "none"; }
 function renameSubject() { const oldName = document.getElementById("renameOldSubject").value; const newName = document.getElementById("renameNewName").value.trim(); if(!oldName || !newName) return showToast("Enter new name", "error"); if(oldName === newName) return showToast("Names are same", "error"); showConfirm("Rename / Merge?", `This will change '${oldName}' to '${newName}' in all history and timetable.`, () => { if(!data.totals[newName]) data.totals[newName] = { p:0, t:0 }; if(data.totals[oldName]) { data.totals[newName].p += data.totals[oldName].p; data.totals[newName].t += data.totals[oldName].t; delete data.totals[oldName]; } Object.keys(data.history).forEach(date => { data.history[date].forEach(entry => { if(entry.subject === oldName) entry.subject = newName; }); Object.keys(data.locks).forEach(lockKey => { if(lockKey.includes(`_${oldName}_`)) { data.locks[lockKey.replace(`_${oldName}_`, `_${newName}_`)] = true; delete data.locks[lockKey]; } }); }); data.tasks.forEach(t => { if(t.subject === oldName) t.subject = newName; }); Object.keys(timetable).forEach(d => { timetable[d].forEach(slot => { if(slot[1] === oldName) slot[1] = newName; }); }); localStorage.setItem("custom_timetable", JSON.stringify(timetable)); save(); document.getElementById("renameNewName").value = ""; showToast("Renamed successfully ✓"); render(); openSettings(); }); }
@@ -1116,14 +1266,37 @@ function renderEditRows() {
     // Re-initialize the custom dropdowns for the new rows
     setupCustomSelects();
 }
+// Helper to preserve unsaved changes before re-rendering
+function syncUnsavedEdits() {
+    const selectedDay = document.getElementById("editDaySelect").value;
+    const container = document.getElementById("editContainer");
+    const rows = container.querySelectorAll(".edit-row");
+    const newDaySchedule = [];
+    rows.forEach((row, index) => {
+        const t = document.getElementById(`time_${index}`).value;
+        let s = document.getElementById(`sub_${index}`)?.value;
+        if (!s) s = row.querySelector('.custom-select-trigger span')?.innerText || '';
+        const w = parseInt(document.getElementById(`wt_${index}`)?.value) || 1;
+        newDaySchedule.push([t, s, w]);
+    });
+    timetable[selectedDay] = newDaySchedule;
+}
+
 function addEditRow() { 
+    syncUnsavedEdits(); // Save current screen state
     const selectedDay = document.getElementById("editDaySelect").value; 
     timetable[selectedDay] ??= []; 
     const defaultSub = getAllSubjects()[0] || "New Subject";
     timetable[selectedDay].push(["00:00-00:00", defaultSub]); 
     renderEditRows(); 
 }
-function delEditRow(index) { const selectedDay = document.getElementById("editDaySelect").value; timetable[selectedDay].splice(index, 1); renderEditRows(); }
+
+function delEditRow(index) { 
+    syncUnsavedEdits(); // Save current screen state
+    const selectedDay = document.getElementById("editDaySelect").value; 
+    timetable[selectedDay].splice(index, 1); 
+    renderEditRows(); 
+}
 function saveNewTimetable() { const selectedDay = document.getElementById("editDaySelect").value; const container = document.getElementById("editContainer"); const rows = container.querySelectorAll(".edit-row"); const newDaySchedule = []; rows.forEach((row, index) => { const t = document.getElementById(`time_${index}`).value; const s = document.getElementById(`sub_${index}`)?.value?.trim() || (row.querySelector('.custom-select-trigger span')?.innerText?.trim()) || ''; const w = parseInt(document.getElementById(`wt_${index}`)?.value) || 1; if(t && s) newDaySchedule.push([t, s, w > 1 ? w : undefined].filter(x => x !== undefined)); }); timetable[selectedDay] = newDaySchedule; localStorage.setItem("custom_timetable", JSON.stringify(timetable)); showToast(`Saved ${selectedDay} ✓`); render(); renderEditRows(); }
 
 let chartInstance = null;
@@ -1210,24 +1383,77 @@ function render(){ showWeekendMessage(day); document.getElementById("today").inn
 window.onload = function() { const splash = document.getElementById('app-splash'); setTimeout(() => { splash.style.opacity = '0'; splash.style.visibility = 'hidden'; if (isFirstRun()) { launchOnboarding(); } else { render(); } }, 1500); initExtra(); };
 
 // ============================================================
-// TIME PICKER POPUP LOGIC
+// TIME PICKER POPUP LOGIC (V3 - FULLY FIXED)
 // ============================================================
-let timePickerContext = { mode: null, day: null, index: null }; // Tracks where the time is being edited
+let timePickerContext = { mode: null, day: null, index: null }; 
+let selectedDuration = 1; 
+
+// Helper to visually update our custom frosted-glass dropdowns
+function syncSelectUI(id, val) {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    sel.value = val;
+    const wrapper = sel.parentNode;
+    if(wrapper && wrapper.classList.contains('custom-select-wrapper')) {
+        const span = wrapper.querySelector('.custom-select-trigger span');
+        if(span) span.innerText = val;
+        const options = wrapper.querySelectorAll('.custom-option');
+        options.forEach(opt => {
+            opt.classList.remove('selected');
+            if(opt.getAttribute('data-value') === val) opt.classList.add('selected');
+        });
+    }
+}
 
 function openTimePicker(mode, index, day = null, currentValue = "") {
     timePickerContext = { mode, index, day };
     
-    let start = "09:00";
-    let end = "10:00";
+    let hour = "09", min = "00", ampm = "AM";
     
-    if (currentValue && currentValue.includes("-")) {
-        const parts = currentValue.split("-");
-        if (parts[0]) start = parts[0].trim();
-        if (parts[1]) end = parts[1].trim();
+    // 1. AUTO-FETCH LOGIC: If this is a new slot, steal the end time from the slot above it!
+    if ((!currentValue || currentValue.includes("00:00") || currentValue.includes("Tap")) && index > 0) {
+        let prevEndTime = null;
+        if (mode === 'settings') {
+            const prevInput = document.getElementById(`time_${index - 1}`);
+            if (prevInput && prevInput.value.includes("-")) {
+                prevEndTime = prevInput.value.split("-")[1].trim();
+            }
+        } else if (mode === 'onboarding') {
+            const prevInput = document.querySelectorAll('.ob-slot-row input')[index - 1];
+            if (prevInput && prevInput.value.includes("-")) {
+                prevEndTime = prevInput.value.split("-")[1].trim();
+            }
+        }
+        
+        if (prevEndTime) {
+            const timeMatch = prevEndTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (timeMatch) {
+                hour = timeMatch[1].padStart(2, '0');
+                min = timeMatch[2].padStart(2, '0');
+                ampm = timeMatch[3].toUpperCase();
+            }
+        }
     }
 
-    document.getElementById('tpStartTime').value = start;
-    document.getElementById('tpEndTime').value = end;
+    // 2. OVERRIDE: If editing an existing time, parse it and load it
+    if (currentValue && currentValue.includes("-") && !currentValue.includes("00:00") && !currentValue.includes("Tap")) {
+        const parts = currentValue.split("-");
+        if (parts[0]) {
+            const timeMatch = parts[0].trim().match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (timeMatch) {
+                hour = timeMatch[1].padStart(2, '0');
+                min = timeMatch[2].padStart(2, '0');
+                ampm = timeMatch[3].toUpperCase();
+            }
+        }
+    }
+
+    // Update the custom UI directly
+    syncSelectUI('tpStartHour', hour);
+    syncSelectUI('tpStartMin', min);
+    syncSelectUI('tpStartAmPm', ampm);
+    
+    selectDuration(1, document.getElementById('dur1')); // Default to 1 hr chip
     document.getElementById('timePickerModal').style.display = 'flex';
 }
 
@@ -1235,23 +1461,59 @@ function closeTimePicker() {
     document.getElementById('timePickerModal').style.display = 'none';
 }
 
+function selectDuration(hours, btn) {
+    selectedDuration = hours;
+    document.querySelectorAll('#timePickerModal .ob-chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+}
+
+function calculateEndTime(hour, min, ampm, durationHours) {
+    let h = parseInt(hour);
+    let m = parseInt(min);
+    
+    // Convert to 24-hour logic for simple math
+    if (ampm === "PM" && h !== 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+
+    let totalMinutes = (h * 60) + m + (durationHours * 60);
+    
+    // Convert back to 12-hour format
+    let endH = Math.floor(totalMinutes / 60) % 24;
+    let endM = totalMinutes % 60;
+    
+    let endAmPm = endH >= 12 ? "PM" : "AM";
+    if (endH > 12) endH -= 12;
+    if (endH === 0) endH = 12;
+
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')} ${endAmPm}`;
+}
+
 function saveTimePicker() {
-    const start = document.getElementById('tpStartTime').value;
-    const end = document.getElementById('tpEndTime').value;
-    const formattedTime = `${start}-${end}`;
+    const startH = document.getElementById('tpStartHour').value;
+    const startM = document.getElementById('tpStartMin').value;
+    const startAmPm = document.getElementById('tpStartAmPm').value;
+    
+    const startTimeStr = `${startH}:${startM} ${startAmPm}`;
+    const endTimeStr = calculateEndTime(startH, startM, startAmPm, selectedDuration);
+    
+    const formattedTime = `${startTimeStr} - ${endTimeStr}`;
 
     if (timePickerContext.mode === 'settings') {
-        // Update Timetable Editor UI
         const input = document.getElementById(`time_${timePickerContext.index}`);
         if(input) input.value = formattedTime;
+        
+        // CRITICAL FIX: Save the time to the array immediately so it isn't lost on UI redraw
+        const selectedDay = document.getElementById("editDaySelect").value;
+        if(timetable[selectedDay] && timetable[selectedDay][timePickerContext.index]) {
+            timetable[selectedDay][timePickerContext.index][0] = formattedTime;
+        }
     } else if (timePickerContext.mode === 'onboarding') {
-        // Update Onboarding State and Re-render
         updateObSlot(timePickerContext.day, timePickerContext.index, 0, formattedTime);
         buildObTimetableUI();
     }
+    
     closeTimePicker(); 
 }
-
 // ============================================================
 // CUSTOM PULL-TO-REFRESH LOGIC (PILL DESIGN) - FIXED
 // ============================================================
@@ -1348,3 +1610,4 @@ document.addEventListener('touchend', () => {
     ptrStartY = 0;
     ptrCurrentY = 0;
 });
+

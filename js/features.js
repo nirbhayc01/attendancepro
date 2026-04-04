@@ -165,9 +165,9 @@ async function saveSubscriptionToCloud(sub) {
 function sendNotification(title, body) {
     if (Notification.permission !== "granted") return;
     if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, icon: 'icon.png' }));
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, icon: 'assets/icon.png' }));
     } else {
-        new Notification(title, { body, icon: 'icon.png' });
+        new Notification(title, { body, icon: 'assets/icon.png' });
     }
 }
 

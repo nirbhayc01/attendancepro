@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "assets/icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon.png",
+      "src": "assets/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -23,37 +23,37 @@
   ],
   "screenshots": [
     {
-      "src": "screen1.png",
+      "src": "assets/screen1.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "screen2.png",
+      "src": "assets/screen2.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "screen3.png",
+      "src": "assets/screen3.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "screen4.png",
+      "src": "assets/screen4.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "screen5.png",
+      "src": "assets/screen5.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "screen6.png",
+      "src": "assets/screen6.png",
       "sizes": "1080x2408",
       "type": "image/png",
       "form_factor": "narrow"

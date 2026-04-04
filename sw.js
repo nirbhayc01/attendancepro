@@ -55,8 +55,8 @@ self.addEventListener("fetch", (e) => {
 self.addEventListener('push', function (event) {
   if (!event.data) return;
   const data     = event.data.json();
-  const iconUrl  = new URL('icon.png',  self.location).href;
-  const badgeUrl = new URL('badge.png', self.location).href;
+  const iconUrl  = new URL('assets/icon.png',  self.location).href;
+  const badgeUrl = new URL('assets/badge.png', self.location).href;
   const options  = {
     body:    data.body,
     icon:    iconUrl,

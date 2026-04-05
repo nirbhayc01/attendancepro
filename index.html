@@ -316,6 +316,22 @@
             <button class="btn-block btn-danger" onclick="triggerReset()">Factory Reset App</button>
         </div>
     </div>
+
+    <!--ABOUT SECTION-->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><span class="icon-book"></span> About & Privacy</h3>
+        </div>
+        <p class="about-text">
+            Version 1.0.0 <br>
+            A <strong>VYRLO</strong> Product
+        </p>
+        <div class="btn-row">
+            <button onclick="window.open('privacy.html', '_blank')" class="btn-pill btn-secondary">Privacy Policy</button>
+            <button onclick="openSupportModal()" class="btn-pill btn-secondary text-green">☕ Support</button>
+        </div>
+    </div>
+    
 </div>
 
 <nav class="bottom-nav">
@@ -570,6 +586,26 @@
         </div>
     </div>
 </div>
+
+<div id="supportModal" class="confirm-overlay z-max">
+    <div class="confirm-box">
+        <div class="support-icon">☕</div>
+        <div class="confirm-title">Support the Developer</div>
+        <div class="confirm-desc" style="margin-bottom: 20px;">If Attendance Pro helped you, consider buying me a coffee to keep the servers running!</div>
+
+        <label class="ob-label" style="text-align:left; margin-bottom:8px;">Donation Amount (₹)</label>
+        <div class="donation-wrapper">
+            <span class="donation-currency">₹</span>
+            <input type="number" id="donationAmount" class="donation-input" value="50" min="10">
+        </div>
+
+        <div class="confirm-actions">
+            <button class="btn-pill btn-secondary" onclick="closeSupportModal()">Maybe Later</button>
+            <button class="btn-pill btn-support-pay" onclick="processDonation()">Pay via UPI</button>
+        </div>
+    </div>
+</div>
+
 <script src="js/core.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/onboarding.js"></script>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "attendance-pro-v21-modular";
+const CACHE_NAME = "attendance-pro-v25-modular";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",

@@ -529,12 +529,14 @@ function showSubjectWise() {
         return;
     }
 
-    let selHTML = `<select id="subFilter" class="custom-select-source" onchange="renderSubjectFilter()"><option value="">All Subjects</option>`;
+    // Removed "All Subjects" - It will now naturally default to the first subject in your list!
+    let selHTML = `<select id="subFilter" class="custom-select-source" onchange="renderSubjectFilter()">`;
     allSubjects.forEach(s => selHTML += `<option value="${s}">${s}</option>`);
     selHTML += `</select>`;
     filterArea.innerHTML = selHTML;
     setupCustomSelects();
 
+    // Trigger the initial render immediately
     renderSubjectFilter(); 
 }
 
@@ -543,7 +545,10 @@ function renderSubjectFilter() {
     const filterVal = document.getElementById("subFilter").value;
     let htmlBuffer = "";
 
-    const subjectsToRender = filterVal ? [filterVal] : getAllSubjects();
+    // We only render the exact subject selected in the dropdown
+    let subjectsToRender = filterVal ? [filterVal] : [];
+    
+    if (subjectsToRender.length === 0) return; // Safety check
 
     subjectsToRender.forEach(sub => {
         htmlBuffer += `<h4 style="margin:20px 0 10px 0; color:var(--text-main);">${sub}</h4>`;

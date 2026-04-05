@@ -238,3 +238,47 @@ function initPullToRefresh() {
         ptrCurrentY = 0;
     });
 }
+
+// ============================================================
+//  SUPPORT & DONATION MODAL
+// ============================================================
+
+function openSupportModal() {
+    document.getElementById('donationAmount').value = 50; // Reset to default 50
+    document.getElementById('supportModal').style.display = 'flex';
+}
+
+function closeSupportModal() {
+    document.getElementById('supportModal').style.display = 'none';
+}
+
+function processDonation() {
+    const amountInput = document.getElementById('donationAmount');
+    let amount = parseInt(amountInput.value);
+
+    // Validate Minimum Amount
+    if (isNaN(amount) || amount < 10) {
+        showToast("Minimum donation is ₹10", "error");
+        amountInput.value = 10;
+        return;
+    }
+
+    // --- IMPORTANT: PUT YOUR DETAILS HERE ---
+    const upiId = "8767202769@slc";  // e.g., 9876543210@paytm
+    const name  = "Nirbhay Chavhan";       // e.g., Nirbhay
+    // ----------------------------------------
+
+    // Generate the dynamic link with the user's amount (&am=)
+    const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&cu=INR&am=${amount}`;
+
+    // 1. Close the modal
+    closeSupportModal();
+
+    // 2. Show the Thank You message instantly
+    showToast("Thank you so much for your support! 💖");
+
+    // 3. Fire the UPI Link to open GPay/PhonePe
+    setTimeout(() => {
+        window.location.href = upiLink;
+    }, 500); // Tiny delay so they see the toast before the app switches
+}

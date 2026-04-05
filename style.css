@@ -147,49 +147,70 @@ img, a { -webkit-touch-callout: none; -webkit-user-drag: none; pointer-events: n
     border-color: var(--accent); 
     box-shadow: 0 0 0 3px var(--accent-glow); 
 }
+/* ============================================================
+   MODERN MOBILE BOTTOM SHEET DROPDOWNS
+   ============================================================ */
 .custom-options { 
-    position: absolute; 
-    display: block;
-    top: 100%; 
+    /* Detach from the button and stick to the screen */
+    position: fixed; 
+    bottom: 0; 
     left: 0; 
     right: 0; 
-    width: 100%; /* Force width to match the trigger */
+    top: auto; 
+    width: 100%; 
     
-    /* Allow text wrapping */
-    white-space: normal;
-    word-break: break-word;
+    /* Responsive height with scrolling */
+    max-height: 50vh; 
+    overflow-y: auto; 
+    overscroll-behavior: contain;
     
-    /* Keep your existing styling */
-    border: 1px solid var(--border-color); 
-    border-radius: 16px; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.8); 
-    background: rgba(11, 15, 25, 0.95); 
-    backdrop-filter: blur(16px); 
-    -webkit-backdrop-filter: blur(16px); 
-    z-index: 200; 
+    /* Native App Styling */
+    background: rgba(11, 15, 25, 0.98); 
+    backdrop-filter: blur(24px); 
+    -webkit-backdrop-filter: blur(24px); 
+    border-top: 1px solid var(--border-color); 
+    border-radius: 28px 28px 0 0; 
+    box-shadow: 0 -20px 50px rgba(0,0,0,0.8); 
+    
+    /* Force it ABOVE the bottom nav bar */
+    z-index: 100000; 
+    
+    /* Safe padding for modern phones with bottom home bars */
+    padding: 16px 16px calc(24px + env(safe-area-inset-bottom)) 16px; 
+    margin: 0; 
+    
+    /* Smooth slide-up animation */
     opacity: 0; 
     visibility: hidden; 
-    transform: translateY(-10px); 
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); 
-    max-height: 250px; 
-    overflow-y: auto; 
-    margin-top: 8px; 
-    padding: 8px; 
+    transform: translateY(100%); 
+    transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1); 
 }
-.custom-select-wrapper.open .custom-options { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.custom-select-wrapper.open .custom-options { 
+    opacity: 1; 
+    visibility: visible; 
+    transform: translateY(0); 
+}
+
 .custom-option { 
-    padding: 12px 14px; 
-    font-size: 14px; 
-    font-weight: 500; 
+    padding: 16px; 
+    font-size: 16px; 
+    font-weight: 600; 
     color: var(--text-muted); 
     cursor: pointer; 
     transition: 0.2s; 
-    border-radius: 10px; 
+    border-radius: 14px; 
     margin-bottom: 4px; 
-    line-height: 1.4; /* Better multi-line spacing */
+    text-align: center; /* Centered text looks great on bottom sheets */
+    word-break: break-word;
 }
+
 .custom-option:last-child { margin-bottom: 0; }
-.custom-option:hover, .custom-option.selected { background: rgba(255,255,255,0.05); color: #fff; }
+
+.custom-option:hover, .custom-option.selected { 
+    background: rgba(59, 130, 246, 0.15); 
+    color: var(--accent); 
+}
 
 .btn-block { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: 700; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
 .btn-block:active { transform: scale(0.97); }

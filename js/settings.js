@@ -454,44 +454,129 @@ function renderDetailView() {
     }
 }
 
+// ==========================================
+// HISTORY LOG TAB FUNCTIONS
+// ==========================================
+
 function showDateWise() {
-    const d      = document.getElementById("dateSelect").value;
-    if (!d || !data.history[d]) return;
-    const result = document.getElementById("detailResult");
+    const container = document.getElementById("detailResult");
+    const filterArea = document.getElementById("filterArea");
     
-    let htmlBuffer = `<div style="margin-bottom:16px;font-weight:800;font-size:16px;color:var(--text-main);">${formatDateDDMMYYYY(d)} <span style="color:var(--text-muted);font-size:14px;font-weight:600;">(${getDayName(d)})</span></div>`;
-    
-    data.history[d].forEach(h => {
-        const leftColor = h.status === 'Present' ? 'var(--green)' : h.status === 'Cancelled' ? 'var(--text-muted)' : 'var(--red)';
-        const colorClass = h.status === 'Present' ? 'text-green' : h.status === 'Cancelled' ? 'text-muted' : 'text-red';
-        htmlBuffer += `<div class="task-item" style="border-left:3px solid ${leftColor};border-right:none;border-top:1px solid var(--border-color);border-bottom:1px solid var(--border-color);background:transparent;padding:12px 14px;border-radius:0;margin-bottom:0;"><div style="flex:1;min-width:0;margin-right:12px;"><div style="font-weight:700;color:var(--text-main);font-size:15px;">${h.subject}</div><div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-top:4px;">${h.time}</div></div><span class="${colorClass}" style="font-weight:800;flex-shrink:0;">${h.status}</span></div>`;
+    const dates = Object.keys(data.history).sort((a, b) => new Date(b) - new Date(a));
+
+    if (dates.length === 0) {
+        container.innerHTML = "<div class='history-empty'>No records yet.</div>";
+        filterArea.innerHTML = "";
+        return;
+    }
+
+    // Removed "All Dates" - It will now naturally default to the most recent date!
+    let selHTML = `<select id="dateFilter" class="custom-select-source" onchange="renderDateFilter()">`;
+    dates.forEach(d => {
+        selHTML += `<option value="${d}">${formatDateDDMMYYYY(d)} - ${getDayName(d)}</option>`;
     });
-    
-    result.innerHTML = htmlBuffer; // Render once
+    selHTML += `</select>`;
+    filterArea.innerHTML = selHTML;
+    setupCustomSelects();
+
+    // Trigger the initial render immediately
+    renderDateFilter();
 }
 
-function showSubjectWise() {
-    const sub    = document.getElementById("subjectSelect").value;
-    if (!sub) return;
-    const result = document.getElementById("detailResult");
-    
+function renderDateFilter() {
+    const container = document.getElementById("detailResult");
+    const filterVal = document.getElementById("dateFilter").value;
     let htmlBuffer = "";
-    Object.keys(data.history).sort().reverse().forEach(d => {
+
+    // We only render the exact date selected in the dropdown
+    let datesToRender = filterVal ? [filterVal] : [];
+
+    if (datesToRender.length === 0) return; // Safety check
+
+    datesToRender.forEach(d => {
+        htmlBuffer += `<h4 style="margin:20px 0 10px 0; color:var(--text-main);">${formatDateDDMMYYYY(d)} - ${getDayName(d)}</h4>`;
+        
+        if (!data.history[d] || data.history[d].length === 0) {
+            htmlBuffer += `<div class="history-empty" style="margin-top:10px;">No classes recorded.</div>`;
+            return;
+        }
+
         data.history[d].forEach(h => {
-            if (h.subject === sub) {
-                const leftColor  = h.status === 'Present' ? 'var(--green)' : h.status === 'Cancelled' ? 'var(--text-muted)' : 'var(--red)';
-                const colorClass = h.status === 'Present' ? 'text-green' : h.status === 'Cancelled' ? 'text-muted' : 'text-red';
-                htmlBuffer += `<div class="task-item" style="border-left:3px solid ${leftColor};border-right:none;border-top:1px solid var(--border-color);border-bottom:1px solid var(--border-color);background:transparent;padding:12px 14px;border-radius:0;margin-bottom:0;"><div style="flex:1;min-width:0;margin-right:12px;"><span style="font-weight:700;color:var(--text-main);font-size:15px;">${formatDateDDMMYYYY(d)}</span><div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-top:4px;">${getDayName(d)}</div></div><span class="${colorClass}" style="font-weight:800;flex-shrink:0;">${h.status}</span></div>`;
-            }
+            const borderClass = h.status === 'Present' ? 'border-green' : h.status === 'Cancelled' ? 'border-muted' : 'border-red';
+            const colorClass  = h.status === 'Present' ? 'text-green'   : h.status === 'Cancelled' ? 'text-muted'   : 'text-red';
+
+            htmlBuffer += `
+            <div class="task-item log-item ${borderClass}">
+                <div class="log-content">
+                    <div class="log-title">${h.subject}</div>
+                    <div class="log-subtitle">${h.time}</div>
+                </div>
+                <span class="log-status ${colorClass}" style="font-weight: 800;">${h.status}</span>
+            </div>`;
         });
     });
+
+    container.innerHTML = htmlBuffer;
+}
+function showSubjectWise() {
+    const container = document.getElementById("detailResult");
+    const filterArea = document.getElementById("filterArea");
     
-    result.innerHTML = htmlBuffer; // Render once
+    const allSubjects = getAllSubjects();
+    if (allSubjects.length === 0) {
+        container.innerHTML = "<div class='history-empty'>No subjects found.</div>";
+        filterArea.innerHTML = "";
+        return;
+    }
+
+    let selHTML = `<select id="subFilter" class="custom-select-source" onchange="renderSubjectFilter()"><option value="">All Subjects</option>`;
+    allSubjects.forEach(s => selHTML += `<option value="${s}">${s}</option>`);
+    selHTML += `</select>`;
+    filterArea.innerHTML = selHTML;
+    setupCustomSelects();
+
+    renderSubjectFilter(); 
 }
 
-// ---- PAST ATTENDANCE EDITOR ----
-let pastBuffer = [], pastDateKey = "", pastDay = "";
+function renderSubjectFilter() {
+    const container = document.getElementById("detailResult");
+    const filterVal = document.getElementById("subFilter").value;
+    let htmlBuffer = "";
 
+    const subjectsToRender = filterVal ? [filterVal] : getAllSubjects();
+
+    subjectsToRender.forEach(sub => {
+        htmlBuffer += `<h4 style="margin:20px 0 10px 0; color:var(--text-main);">${sub}</h4>`;
+        let found = false;
+
+        const dates = Object.keys(data.history).sort((a, b) => new Date(b) - new Date(a));
+        
+        dates.forEach(d => {
+            data.history[d].forEach(h => {
+                if (h.subject === sub) {
+                    found = true;
+                    const borderClass = h.status === 'Present' ? 'border-green' : h.status === 'Cancelled' ? 'border-muted' : 'border-red';
+                    const colorClass  = h.status === 'Present' ? 'text-green'   : h.status === 'Cancelled' ? 'text-muted'   : 'text-red';
+
+                    htmlBuffer += `
+                    <div class="task-item log-item ${borderClass}">
+                        <div class="log-content">
+                            <div class="log-title">${formatDateDDMMYYYY(d)}</div>
+                            <div class="log-subtitle">${getDayName(d)}</div>
+                        </div>
+                        <span class="log-status ${colorClass}" style="font-weight: 800;">${h.status}</span>
+                    </div>`;
+                }
+            });
+        });
+
+        if (!found) {
+            htmlBuffer += `<div class="history-empty" style="margin-top:10px;">No records for this subject.</div>`;
+        }
+    });
+
+    container.innerHTML = htmlBuffer;
+}
 function loadPastTimetable() {
     const input    = document.getElementById("pastDate");
     const val      = input.value;

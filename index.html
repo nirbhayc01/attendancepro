@@ -265,7 +265,7 @@
         <input type="date" id="pastDate" onchange="loadPastTimetable()" />
         <div id="pastLectures"></div>
         <div id="pastExtra" style="margin-top:12px;"></div>
-        <button class="btn-block btn-primary" onclick="savePastAttendance()" style="margin-top:20px;">Save Past Data</button>
+        <button id="savePastBtn" class="btn-block btn-primary" onclick="savePastAttendance()" style="margin-top:20px; display:none;">Save Past Data</button>
     </div>
 
     <div class="card" onclick="toggleUndo()" style="cursor:pointer; border: 1px dashed var(--border-color); background: transparent;">
@@ -295,7 +295,7 @@
     <!-- SEMESTER LIFECYCLE CARD -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title"><span class="icon-grad" style="display:inline-block; margin-right:6px; vertical-align:middle;"></span> Semester Management</h3>
+            <h3 class="card-title"><span class="icon-grad"></span> Semester Management</h3>
         </div>
         <p style="font-size:13px; color:var(--text-muted); margin-top:-5px; margin-bottom:16px;">End your semester to archive data and start fresh for the next one.</p>
         <button class="btn-block btn-secondary" onclick="openSemArchiveModal()" style="margin-bottom:12px;"><span class="icon-archive" style="display:inline-block; margin-right:6px; vertical-align:middle;"></span> View Past Semesters</button>

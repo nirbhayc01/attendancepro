@@ -488,6 +488,7 @@ function showSubjectWise() {
     
     result.innerHTML = htmlBuffer; // Render once
 }
+
 // ---- PAST ATTENDANCE EDITOR ----
 let pastBuffer = [], pastDateKey = "", pastDay = "";
 
@@ -496,6 +497,8 @@ function loadPastTimetable() {
     const val      = input.value;
     const container = document.getElementById("pastLectures");
     const extraDiv  = document.getElementById("pastExtra");
+    const saveBtn   = document.getElementById("savePastBtn"); // Grab the button
+    
     const semStart  = localStorage.getItem("sem_start_date");
     const semEnd    = localStorage.getItem("sem_end_date");
     const todayStr  = new Date().toISOString().split('T')[0];
@@ -505,14 +508,32 @@ function loadPastTimetable() {
     container.innerHTML = "";
     extraDiv.innerHTML  = "";
     pastBuffer = [];
-    if (!val) return;
-    if (val > input.max) { showToast("Cannot edit future / beyond semester", "error"); input.value = ""; return; }
+    
+    // Hide button if date is cleared
+    if (!val) { 
+        if (saveBtn) saveBtn.style.display = "none"; 
+        return; 
+    }
+    
+    // Hide button and clear input if date is invalid
+    if (val > input.max) { 
+        showToast("Cannot edit future / beyond semester", "error"); 
+        input.value = ""; 
+        if (saveBtn) saveBtn.style.display = "none";
+        return; 
+    }
+
+    // Show button if date is valid
+    if (saveBtn) saveBtn.style.display = "flex";
 
     pastDateKey = val;
     pastDay     = new Date(val).toLocaleDateString("en-US", { weekday: "long" });
 
     const pastHoliday = getHolidayForDate(pastDateKey);
     if (pastHoliday) {
+        // If it's a holiday, we shouldn't show the save button since there's nothing to save
+        if (saveBtn) saveBtn.style.display = "none"; 
+        
         let svgIcon = "", colorTheme = "";
 
         if (pastHoliday.type === 'exam') {
@@ -555,7 +576,7 @@ function loadPastTimetable() {
     let extraHTML = existingExtras.map(ex => `<div class="task-item" style="margin-bottom:8px;"><span><span style="font-weight:600;">${ex.subject}</span> <span style="font-size:12px;color:var(--text-muted);">(Extra)</span></span> <div style="display:flex;align-items:center;gap:12px;"><span class="${ex.status === 'Present' ? 'text-green' : 'text-red'}" style="font-weight:700;">${ex.status}</span><button class="del-task-btn" onclick="removePastExtra('${ex.subject}')">×</button></div></div>`).join('');
 
     const allSubjects = getAllSubjects();
-    extraDiv.innerHTML = `<div style="height:1px;background:var(--border-color);margin:20px 0;"></div><div id="existingExtrasList">${extraHTML}</div><h4 style='margin:16px 0 12px 0;font-size:15px;font-weight:700;'>➕ Add Extra Class</h4><select id="pastExtraSubject" class="custom-select-source">${allSubjects.map(s => `<option>${s}</option>`).join("")}</select><div class="action-row"><button class="btn-pill btn-secondary" onclick="addPastExtra('Present')">Present</button><button class="btn-pill btn-secondary" onclick="addPastExtra('Absent')">Absent</button></div>`;
+    extraDiv.innerHTML = `<div style="height:1px;background:var(--border-color);margin:20px 0;"></div><div id="existingExtrasList">${extraHTML}</div><h4 style='margin:16px 0 12px 0;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;'>${ICONS.slot} Add Extra Class</h4><select id="pastExtraSubject" class="custom-select-source">${allSubjects.map(s => `<option>${s}</option>`).join("")}</select><div class="action-row"><button class="btn-pill btn-secondary" onclick="addPastExtra('Present')">Present</button><button class="btn-pill btn-secondary" onclick="addPastExtra('Absent')">Absent</button></div>`;
     setupCustomSelects();
 }
 
@@ -604,6 +625,10 @@ function savePastAttendance() {
     document.getElementById("pastDate").value        = "";
     document.getElementById("pastLectures").innerHTML = "";
     document.getElementById("pastExtra").innerHTML    = "";
+    
+    // Hide the button again after successful save
+    const saveBtn = document.getElementById("savePastBtn");
+    if (saveBtn) saveBtn.style.display = "none";
 }
 
 // ---- DATA EXPORT & IMPORT ----

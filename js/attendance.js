@@ -429,32 +429,41 @@ function renderSummary() {
 
 // --- SUBJECT DETAIL MODAL ---
 function openSubjectDetail(subject) {
-    const modal = document.getElementById('subjectDetailModal');
-    const title = document.getElementById('subjectDetailTitle');
-    const list  = document.getElementById('subjectDetailList');
-    title.innerText  = subject;
-    
-    const dates = Object.keys(data.history).sort().reverse();
+    document.getElementById("subjectDetailTitle").innerText = subject + " History";
+    const list = document.getElementById("subjectDetailList");
+    let htmlBuffer = "";
     let found = false;
-    let htmlBuffer = ""; // <-- Create a buffer
-    
+
+    // Sort dates from newest to oldest
+    const dates = Object.keys(data.history).sort((a, b) => new Date(b) - new Date(a));
+
     dates.forEach(d => {
         data.history[d].forEach(entry => {
             if (entry.subject === subject) {
                 found = true;
+                // Assign clean CSS classes instead of inline styles
                 const colorClass = entry.status === 'Present' ? 'text-green' : (entry.status === 'Cancelled' ? 'text-muted' : 'text-red');
-                // Add to the buffer, NOT the DOM
-                htmlBuffer += `<div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color);"><div><div style="font-size:15px;font-weight:700;">${formatDateDDMMYYYY(d)}</div><div style="font-size:13px;font-weight:500;color:var(--text-muted);margin-top:4px;">${getDayName(d)}</div></div><div class="${colorClass}" style="font-weight:800;font-size:15px;display:flex;align-items:center;">${entry.status}</div></div>`;
+                
+                htmlBuffer += `
+                <div class="history-item">
+                    <div>
+                        <div class="history-date">${formatDateDDMMYYYY(d)}</div>
+                        <div class="history-day">${getDayName(d)}</div>
+                    </div>
+                    <div class="history-status ${colorClass}">${entry.status}</div>
+                </div>`;
             }
         });
     });
-    
-    if (!found) htmlBuffer = "<div style='text-align:center;color:var(--text-muted);font-weight:600;margin-top:30px;'>No history found.</div>";
-    
-    // Write to the DOM exactly ONCE
-    list.innerHTML = htmlBuffer; 
-    modal.style.display = "flex";
+
+    if (!found) {
+        htmlBuffer = "<div class='history-empty'>No history found.</div>";
+    }
+
+    list.innerHTML = htmlBuffer;
+    document.getElementById("subjectDetailModal").style.display = "flex";
 }
+
 function closeSubjectDetail() { document.getElementById('subjectDetailModal').style.display = "none"; }
 
 // --- BACKGROUND REMINDER CHECK ---

@@ -164,10 +164,19 @@ async function saveSubscriptionToCloud(sub) {
 
 function sendNotification(title, body) {
     if (Notification.permission !== "granted") return;
+    
+    // Define all options here, including the badge!
+    const options = { 
+        body: body, 
+        icon: 'assets/icon.png',
+        badge: 'assets/badge.png', 
+        vibrate: [200, 100, 200]
+    };
+
     if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, icon: 'assets/icon.png' }));
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
     } else {
-        new Notification(title, { body, icon: 'assets/icon.png' });
+        new Notification(title, options);
     }
 }
 

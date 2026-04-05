@@ -160,7 +160,7 @@ img, a { -webkit-touch-callout: none; -webkit-user-drag: none; pointer-events: n
     width: 100%; 
     
     /* Responsive height with scrolling */
-    max-height: 50vh; 
+    max-height: 30vh; 
     overflow-y: auto; 
     overscroll-behavior: contain;
     

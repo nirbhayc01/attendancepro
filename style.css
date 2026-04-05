@@ -428,3 +428,38 @@ img, a { -webkit-touch-callout: none; -webkit-user-drag: none; pointer-events: n
 @keyframes ptr-spin {
     100% { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   COMPONENT & UTILITY CLEANUP CLASSES 
+   ============================================================ */
+
+/* Utilities */
+.z-max { z-index: 100000; }
+.btn-row { display: flex; gap: 10px; }
+.divider { height: 1px; background: var(--border-color); margin: 20px 0; }
+.about-text { font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 12px; line-height: 1.5; }
+
+/* Support Modal */
+.support-icon { font-size: 48px; margin-bottom: 16px; animation: float 4s ease-in-out infinite; }
+.donation-wrapper { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 0 16px; margin-bottom: 20px; }
+.donation-currency { font-size: 18px; font-weight: 800; color: var(--text-main); margin-right: 8px; }
+.donation-input { background: transparent; border: none; padding: 14px 0; margin: 0; font-size: 18px; font-weight: 700; width: 100%; outline: none; box-shadow: none; color: white; }
+.btn-support-pay { background: var(--green); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+
+/* History & Modal Lists */
+.history-empty { text-align: center; color: var(--text-muted); font-weight: 600; margin-top: 30px; }
+.history-item { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+.history-date { font-size: 15px; font-weight: 700; }
+.history-day { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-top: 4px; }
+.history-status { font-weight: 800; font-size: 15px; display: flex; align-items: center; }
+
+/* History Log Tab Specifics */
+.log-item { border-right: none; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: transparent; padding: 12px 14px; border-radius: 0; margin-bottom: 0; }
+.log-content { flex: 1; min-width: 0; margin-right: 12px; }
+.log-title { font-weight: 700; color: var(--text-main); font-size: 15px; }
+.log-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 4px; }
+
+/* Dynamic Status Borders */
+.border-green { border-left: 3px solid var(--green); }
+.border-red { border-left: 3px solid var(--red); }
+.border-muted { border-left: 3px solid var(--text-muted); }
